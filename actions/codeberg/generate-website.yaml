@@ -1,0 +1,61 @@
+# Ngwg Codeberg (Forgejo Actions) Pages 部署工作流
+#
+# 用法：将本文件复制到你的站点仓库的 .forgejo/workflows/generate-website.yaml，
+# 之后每次 push 到 main（或手动触发）都会在干净的 Runner 上全新安装 Ngwg 并构建，
+# 然后把 public/ 推送到本仓库的 pages 分支完成发布。
+#
+# Codeberg Pages 的发布方式是 git 推送：
+#   - 项目页面：本仓库的 pages 分支 → https://<user>.codeberg.page/<repo>/
+#   - 用户主页：名为 pages 的仓库的 pages 分支 → https://<user>.codeberg.page/
+# 首次部署后到 https://<user>.codeberg.page/ 查看站点。
+#
+# 可按需修改：触发分支、NGWG_CLI_REPO / NGWG_CLI_REF（换成 fork 或固定版本）
+
+name: Generate Website
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  NGWG_CLI_REPO: https://github.com/Ngwgers/Ngwg-cli
+  NGWG_CLI_REF: main
+  NGWG_PAGES_TOKEN: ${{ secrets.PAGES_TOKEN || secrets.GITHUB_TOKEN }}
+
+jobs:
+  build-and-deploy:
+    runs-on: codeberg-tiny
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install fish
+        run: |
+          if [ "$(id -u)" != 0 ] && command -v sudo >/dev/null; then SUDO=sudo; else SUDO=; fi
+          $SUDO apt-get update
+          $SUDO apt-get install -y --no-install-recommends fish
+
+      - name: Setup bun
+        run: |
+          curl -fsSL https://bun.sh/install | bash
+          echo "$HOME/.bun/bin" >> "$GITHUB_PATH"
+
+      - name: Download Ngwg-cli
+        run: |
+          git clone --depth 1 --branch "$NGWG_CLI_REF" "$NGWG_CLI_REPO" "$RUNNER_TEMP/ngwg-cli"
+
+      - name: Build site
+        run: fish "$RUNNER_TEMP/ngwg-cli/bin/ngwg.fish" build
+
+      - name: Deploy to Codeberg Pages
+        uses: https://codeberg.org/git-pages/action@v2
+        with: |
+          site: https://${{ forge.repository_owner }}.codeberg.page/
+          token: ${{ forge.token }}
+          source: public
