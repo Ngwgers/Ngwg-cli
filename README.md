@@ -21,9 +21,12 @@ ngwg build
 | `ngwg plugin install <name> <url>` | 安装插件 |
 | `ngwg plugin install-all` | 安装配置中声明的全部插件 |
 | `ngwg plugin list / remove / path` | 插件目录管理 |
-| `ngwg update [core\|theme\|plugin [name...]]` | 更新 `.ngwg/` 下由 CLI 管理的副本至最新版；不带参数时全部更新，`plugin` 可追加 name 只更新指定插件 |
+
+| `ngwg update [core\|theme [name...]\|plugin [name...]]` | 更新 `.ngwg/` 下由 CLI 管理的副本至最新版；不带参数时全部更新，`plugin`/`theme` 可追加 name 只更新指定项；`update core` 与 `update theme <name>` 在副本缺失时会直接安装（主题来源见 `themes.<name>` 声明） |
 | `ngwg clean` | 删除 public/ 与 .ngwg/ |
 | `ngwg help` / `version` | 帮助与版本 |
+
+主题管理：`themes.<name>: <url> | { url, options }` 声明主题来源，`theme` 字段只负责选择；声明的主题自动安装到 `.ngwg/themes/<name>`（详见 [Ngwg-docs/configuration.md](../Ngwg-docs/configuration.md) 的"主题解析规则"）。
 
 `--root=DIR` 可指定项目根目录（默认当前目录）。
 
@@ -62,7 +65,7 @@ ngwg build
 | `ngwg plugin install <name> <url>` | Install a plugin |
 | `ngwg plugin install-all` | Install all plugins declared in the configuration |
 | `ngwg plugin list / remove / path` | Plugin directory management |
-| `ngwg update [core\|theme\|plugin [name...]]` | Update the CLI-managed copies under `.ngwg/` to the latest version; without arguments everything is updated, `plugin` accepts names to update only the given plugins |
+| `ngwg update [core\|theme [name...]\|plugin [name...]]` | Update the CLI-managed copies under `.ngwg/` to the latest version; without arguments everything is updated, `theme`/`plugin` accept names to update only the given items; `update core` and `update theme <name>` also install when the store copy is missing (theme sources come from `themes.<name>` declarations) |
 | `ngwg clean` | Remove public/ and .ngwg/ |
 | `ngwg help` / `version` | Help and version |
 
