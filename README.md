@@ -1,6 +1,6 @@
 # Ngwg-cli
 
-Ngwg 的命令行入口。Fish 是入口与胶水，命令实现是 TypeScript（Bun 运行）。
+Ngwg 的命令行入口。
 
 ## 使用
 
@@ -14,11 +14,11 @@ ngwg build
 
 | 命令 | 说明 |
 | --- | --- |
-| `ngwg build` | 生成 public/（完整九步管线） |
+| `ngwg build` | 生成 public |
 | `ngwg dev [--port N] [--speed KBPS]` | dev daemon + 实时重载；`--speed` 模拟弱网（10 ≈ 10KB 文件 1 秒，0/负数禁用），也可在 ngwg.yaml 用 `dev_speed` 配置 |
 | `ngwg init` | 在当前目录生成 ngwg.yaml 与 source/_posts 脚手架 |
 | `ngwg add [-L 标题] [-T 标签...] [-C 分类...] [-D 日期]` | 新建文章：不带参数时启动交互式表单（TUI，日期自动填今天，↑↓ 切换、Enter 确认、`e` 返回编辑）；带参数时直接创建（`-D` 缺省今天，`source_dir` 读取自配置） |
-| `ngwg plugin install <name> <url>` | 安装插件（调 Ngwg-core 的 fish 脚本） |
+| `ngwg plugin install <name> <url>` | 安装插件 |
 | `ngwg plugin install-all` | 安装配置中声明的全部插件 |
 | `ngwg plugin list / remove / path` | 插件目录管理 |
 | `ngwg clean` | 删除 public/ 与 .ngwg/ |
@@ -41,7 +41,7 @@ This project is licensed under the [GNU General Public License v3.0 (GPL-3.0)](L
 
 # Ngwg-cli
 
-The command-line entry point for Ngwg. Fish is the entry and glue; commands are implemented in TypeScript (run with Bun).
+The command-line entry point for Ngwg.
 
 ## Usage
 
@@ -55,10 +55,10 @@ ngwg build
 
 | Command | Description |
 | --- | --- |
-| `ngwg build` | Generate public/ (the full nine-step pipeline) |
+| `ngwg build` | Generate public |
 | `ngwg dev [--port N] [--speed KBPS]` | dev daemon + live reload; `--speed` simulates a slow network (10 ≈ a 10 KB file takes 1 second; 0/negative disables it), also configurable as `dev_speed` in ngwg.yaml |
 | `ngwg init` | Scaffold ngwg.yaml and source/_posts in the current directory |
-| `ngwg plugin install <name> <url>` | Install a plugin (calls Ngwg-core's fish script) |
+| `ngwg plugin install <name> <url>` | Install a plugin |
 | `ngwg plugin install-all` | Install all plugins declared in the configuration |
 | `ngwg plugin list / remove / path` | Plugin directory management |
 | `ngwg clean` | Remove public/ and .ngwg/ |

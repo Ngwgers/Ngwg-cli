@@ -22,11 +22,11 @@ import { pathToFileURL } from "node:url";
 // --- the only hardcoded sources in the entire project ------------------------
 
 const OFFICIAL_ORG = "github.com/Ngwgers";
-const DEFAULT_CORE_REPO = `git@github.com:Ngwgers/Ngwg-core`;
-const DEFAULT_THEME_REPO = `git@github.com:Ngwgers/Ngwg-default-theme`;
+const DEFAULT_CORE_REPO = `https://github.com/Ngwgers/Ngwg-core`;
+const DEFAULT_THEME_REPO = `https://github.com/Ngwgers/Ngwg-default-theme`;
 const DEFAULT_PLUGINS: Record<string, string> = {
-  files: "git@github.com:Ngwgers/Ngwg-files",
-  feature: "git@github.com:Ngwgers/Ngwg-feature",
+  files: "https://github.com/Ngwgers/Ngwg-files",
+  feature: "https://github.com/Ngwgers/Ngwg-feature",
 };
 
 function fail(msg: string): never {
