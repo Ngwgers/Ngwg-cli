@@ -16,17 +16,16 @@ ngwg build
 | --- | --- |
 | `ngwg build` | 生成 public |
 | `ngwg dev [--port N] [--speed KBPS]` | dev daemon + 实时重载；`--speed` 模拟弱网（10 ≈ 10KB 文件 1 秒，0/负数禁用），也可在 ngwg.yaml 用 `dev_speed` 配置 |
-| `ngwg init` | 在当前目录生成 ngwg.yaml 与 source/_posts 脚手架 |
+| `ngwg init` | 在当前目录生成 ngwg.yaml 与 source/_posts 脚手架（含默认主题源引用与 `Ngwg.core-repo-url`/`theme-repo-url`） |
 | `ngwg add [-L 标题] [-T 标签...] [-C 分类...] [-D 日期]` | 新建文章：不带参数时启动交互式表单（TUI，日期自动填今天，↑↓ 切换、Enter 确认、`e` 返回编辑）；带参数时直接创建（`-D` 缺省今天，`source_dir` 读取自配置） |
 | `ngwg plugin install <name> <url>` | 安装插件 |
 | `ngwg plugin install-all` | 安装配置中声明的全部插件 |
 | `ngwg plugin list / remove / path` | 插件目录管理 |
-
 | `ngwg update [core\|theme [name...]\|plugin [name...]]` | 更新 `.ngwg/` 下由 CLI 管理的副本至最新版；不带参数时全部更新，`plugin`/`theme` 可追加 name 只更新指定项；`update core` 与 `update theme <name>` 在副本缺失时会直接安装（主题来源见 `themes.<name>` 声明） |
 | `ngwg clean` | 删除 public/ 与 .ngwg/ |
 | `ngwg help` / `version` | 帮助与版本 |
 
-主题管理：`themes.<name>: <url> | { url, options }` 声明主题来源，`theme` 字段只负责选择；声明的主题自动安装到 `.ngwg/themes/<name>`（详见 [Ngwg-docs/configuration.md](../Ngwg-docs/configuration.md) 的"主题解析规则"）。
+主题管理：`themes.<name>: <url> | { url, options }` 声明主题来源，`theme` 字段只负责选择；远程/file:// 声明自动安装到 `.ngwg/themes/<name>`，本地路径直接使用（详见 [Ngwg-docs/configuration.md](../Ngwg-docs/configuration.md) 的"主题解析规则"）。
 
 `--root=DIR` 可指定项目根目录（默认当前目录）。
 

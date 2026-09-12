@@ -1,16 +1,13 @@
 // Ngwg-cli bootstrap.
 //
-// The CLI knows none of the other repositories as filesystem siblings by
-// contract: it *resolves* the Ngwg core at runtime and, like a plugin,
-// downloads it into <root>/.ngwg/core when it is not available (its source
-// can be overridden via Ngwg.core-repo-url / $NGWG_CORE — `ngwg update core`
-// installs/refreshes the same copy). Themes are NOT managed here: `ngwg init`
-// scaffolds a themes.<name> source declaration in ngwg.yaml and the core's
-// theme management fetches the theme into <root>/.ngwg/themes/<name> on
-// first use; this bootstrap only injects what already exists on disk as a
-// fallback for bare theme names ($NGWG_DEFAULT_THEME, the project store).
-// The official default plugins (files, feature) are hardcoded here — this is
-// the only place — and can be overridden:
+// The CLI resolves the Ngwg core at runtime: $NGWG_CORE → the monorepo
+// sibling checkout (development) → <root>/.ngwg/core, which is downloaded
+// from Ngwg.core-repo-url when absent (`ngwg update core` refreshes the same
+// copy). Themes are declared via themes.<name> in ngwg.yaml and fetched by
+// the core's theme management; for bare theme names this bootstrap only
+// injects an existing disk copy ($NGWG_DEFAULT_THEME or the project theme
+// store). The official default plugins (files, feature) are hardcoded here
+// and can be overridden:
 //
 //   ngwg.yaml:  Ngwg.core-repo-url / Ngwg.theme-repo-url / themes.<name> /
 //               plugins.<key>
@@ -25,7 +22,7 @@ import { existsSync, mkdirSync, readFileSync, renameSync, rmSync } from "node:fs
 import * as path from "node:path";
 import { pathToFileURL } from "node:url";
 
-// --- the only hardcoded sources in the entire project ------------------------
+// --- official default sources ------------------------------------------------
 
 const OFFICIAL_ORG = "github.com/Ngwgers";
 const DEFAULT_CORE_REPO = `https://github.com/Ngwgers/Ngwg-core`;
@@ -75,10 +72,7 @@ function normalizeRepoUrl(url: string): string {
   return /^[\w.-]+\/[\w.-]+$/.test(url) ? `${OFFICIAL_ORG}/${url}` : url;
 }
 
-/** git clone --depth 1 into a temp dir, validate, then move into place — a
- * failed or interrupted fetch never leaves a broken store copy behind, and a
- * pre-existing broken dir at dest (e.g. from an interrupted download) is
- * replaced instead of blocking every future run with "already exists". */
+/** git clone --depth 1 into a temp dir, validate, then move into place. */
 function downloadRepo(url: string, dest: string, validate: (dir: string) => boolean): void {
   const cloneUrl = normalizeRepoUrl(url);
   const tmp = `${dest}.download`;
@@ -99,9 +93,8 @@ function downloadRepo(url: string, dest: string, validate: (dir: string) => bool
 
 /**
  * Core resolution order:
- *   $NGWG_CORE → <cli>/../Ngwg-core (monorepo dev convenience, NOT required) →
- *   <root>/.ngwg/core (auto-download on first use from Ngwg.core-repo-url —
- *   which ngwg init writes into the scaffold; the default is hardcoded below)
+ *   $NGWG_CORE → <cli>/../Ngwg-core (monorepo dev checkout) →
+ *   <root>/.ngwg/core (downloaded from Ngwg.core-repo-url when absent)
  */
 function resolveCoreDir(rootDir: string, coreRepoUrl: string, cliRoot: string): string {
   const env = process.env.NGWG_CORE;
@@ -119,15 +112,10 @@ function resolveCoreDir(rootDir: string, coreRepoUrl: string, cliRoot: string): 
 }
 
 /**
- * Default theme injection (for bare names like `theme: pacific` that are not
- * covered by a themes.<name> declaration): $NGWG_DEFAULT_THEME (explicit
- * injection, e.g. hermetic test setups) → the project theme store
+ * Existing copy for bare theme names like `theme: pacific` (not covered by a
+ * themes.<name> declaration): $NGWG_DEFAULT_THEME → the project theme store
  * (<root>/.ngwg/themes/pacific) → the legacy <root>/.ngwg/theme store.
- *
- * pacific is NOT special-cased into an auto-download here: `ngwg init`
- * scaffolds a themes.pacific source declaration and the core's theme
- * management fetches the theme on first use. This only resolves what already
- * exists on disk; undefined when nothing does.
+ * Only resolves what is already on disk; undefined when nothing is.
  */
 function resolveDefaultThemeDir(rootDir: string): { name: string; dir: string } | undefined {
   const candidates: string[] = [];
