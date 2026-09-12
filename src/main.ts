@@ -64,9 +64,14 @@ function isCoreDir(p: string): boolean {
   return existsSync(path.join(p, "src", "index.ts"));
 }
 
+/** Expand a `user/repo` shorthand into a full GitHub URL (official org). */
+function normalizeRepoUrl(url: string): string {
+  return /^[\w.-]+\/[\w.-]+$/.test(url) ? `${OFFICIAL_ORG}/${url}` : url;
+}
+
 /** git clone --depth 1 (supports git@ / https / user/repo shorthand). */
 function downloadRepo(url: string, dest: string, validate: (dir: string) => boolean): void {
-  const cloneUrl = /^[\w.-]+\/[\w.-]+$/.test(url) ? `${OFFICIAL_ORG}/${url}` : url;
+  const cloneUrl = normalizeRepoUrl(url);
   mkdirSync(path.dirname(dest), { recursive: true });
   const res = spawnSync("git", ["clone", "--depth", "1", cloneUrl, dest], { stdio: "pipe" });
   if (res.status !== 0 || !validate(dest)) {
@@ -124,8 +129,10 @@ async function main(): Promise<void> {
   const rootDir = process.env.NGWG_ROOT || process.cwd();
   const overrides = scrapeNgwgSection(rootDir);
 
-  const coreDir = resolveCoreDir(rootDir, overrides["core-repo-url"] || DEFAULT_CORE_REPO, cliRoot);
-  const defaultTheme = resolveDefaultThemeDir(rootDir, overrides["theme-repo-url"] || DEFAULT_THEME_REPO, cliRoot);
+  const coreRepoUrl = normalizeRepoUrl(overrides["core-repo-url"] || DEFAULT_CORE_REPO);
+  const themeRepoUrl = normalizeRepoUrl(overrides["theme-repo-url"] || DEFAULT_THEME_REPO);
+  const coreDir = resolveCoreDir(rootDir, coreRepoUrl, cliRoot);
+  const defaultTheme = resolveDefaultThemeDir(rootDir, themeRepoUrl, cliRoot);
   // child processes (plugin fish script → plugin-urls.ts) use it too
   process.env.NGWG_DEFAULT_THEME = defaultTheme.dir;
 
@@ -141,6 +148,9 @@ async function main(): Promise<void> {
     rootDir,
     defaultPlugins,
     defaultTheme,
+    // consumed by `ngwg update core|theme`
+    coreRepoUrl,
+    themeRepoUrl,
   });
 }
 

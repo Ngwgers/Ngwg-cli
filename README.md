@@ -21,6 +21,7 @@ ngwg build
 | `ngwg plugin install <name> <url>` | 安装插件 |
 | `ngwg plugin install-all` | 安装配置中声明的全部插件 |
 | `ngwg plugin list / remove / path` | 插件目录管理 |
+| `ngwg update [core\|theme\|plugin [name...]]` | 更新 `.ngwg/` 下由 CLI 管理的副本至最新版；不带参数时全部更新，`plugin` 可追加 name 只更新指定插件 |
 | `ngwg clean` | 删除 public/ 与 .ngwg/ |
 | `ngwg help` / `version` | 帮助与版本 |
 
@@ -61,6 +62,7 @@ ngwg build
 | `ngwg plugin install <name> <url>` | Install a plugin |
 | `ngwg plugin install-all` | Install all plugins declared in the configuration |
 | `ngwg plugin list / remove / path` | Plugin directory management |
+| `ngwg update [core\|theme\|plugin [name...]]` | Update the CLI-managed copies under `.ngwg/` to the latest version; without arguments everything is updated, `plugin` accepts names to update only the given plugins |
 | `ngwg clean` | Remove public/ and .ngwg/ |
 | `ngwg help` / `version` | Help and version |
 
