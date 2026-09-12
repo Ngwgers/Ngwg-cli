@@ -138,7 +138,9 @@ async function main(): Promise<void> {
   const themeRepoUrl = normalizeRepoUrl(overrides["theme-repo-url"] || DEFAULT_THEME_REPO);
   const coreDir = resolveCoreDir(rootDir, coreRepoUrl, cliRoot);
   const defaultTheme = resolveDefaultThemeDir(rootDir);
-  // child processes (plugin fish script → plugin-urls.ts) use it too
+  // child processes use it too: plugin fish script → plugin-urls.ts imports
+  // the YAML parser from the core; the fish script resolves declarations with it
+  process.env.NGWG_CORE = coreDir;
   if (defaultTheme) process.env.NGWG_DEFAULT_THEME = defaultTheme.dir;
 
   const defaultPlugins: Record<string, string> = {};
@@ -146,14 +148,19 @@ async function main(): Promise<void> {
     defaultPlugins[key] = process.env[`NGWG_${key.toUpperCase()}_PLUGIN`] || url;
   }
 
-  const core = await import(pathToFileURL(path.join(coreDir, "src", "cli.ts")).href + "?t=" + Date.now());
-  await core.cliMain({
+  // the CLI talks to the core ONLY through its public API (src/index.ts);
+  // the plugin-management script is CLI-owned and injected into the core
+  const core = await import(pathToFileURL(path.join(coreDir, "src", "index.ts")).href + "?t=" + Date.now());
+  const { cliMain } = await import(pathToFileURL(path.join(cliRoot, "src", "cli.ts")).href);
+  await cliMain({
+    core,
     argv: process.argv.slice(2),
     coreDir,
     rootDir,
     defaultPlugins,
+    pluginScript: path.join(cliRoot, "scripts", "ngwg-plugins.fish"),
     defaultTheme,
-    // consumed by `ngwg update core|theme`
+    // consumed by `ngwg update core|theme` and the init scaffold
     coreRepoUrl,
     themeRepoUrl,
   });
