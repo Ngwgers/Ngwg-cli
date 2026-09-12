@@ -21,7 +21,7 @@
 // <core>/src/cli.ts and handed everything they need.
 
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync } from "node:fs";
 import * as path from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -75,25 +75,33 @@ function normalizeRepoUrl(url: string): string {
   return /^[\w.-]+\/[\w.-]+$/.test(url) ? `${OFFICIAL_ORG}/${url}` : url;
 }
 
-/** git clone --depth 1 (supports git@ / https / user/repo shorthand). */
+/** git clone --depth 1 into a temp dir, validate, then move into place — a
+ * failed or interrupted fetch never leaves a broken store copy behind, and a
+ * pre-existing broken dir at dest (e.g. from an interrupted download) is
+ * replaced instead of blocking every future run with "already exists". */
 function downloadRepo(url: string, dest: string, validate: (dir: string) => boolean): void {
   const cloneUrl = normalizeRepoUrl(url);
+  const tmp = `${dest}.download`;
+  rmSync(tmp, { recursive: true, force: true });
   mkdirSync(path.dirname(dest), { recursive: true });
-  const res = spawnSync("git", ["clone", "--depth", "1", cloneUrl, dest], { stdio: "pipe" });
-  if (res.status !== 0 || !validate(dest)) {
+  const res = spawnSync("git", ["clone", "--depth", "1", cloneUrl, tmp], { stdio: "pipe" });
+  if (res.status !== 0 || !validate(tmp)) {
+    rmSync(tmp, { recursive: true, force: true });
     fail(
       `could not fetch ${cloneUrl} into ${dest}.\n` +
         (res.stderr?.toString() || "") +
-        `Set Ngwg.core-repo-url in ngwg.yaml or NGWG_CORE in the environment to a local core directory.`,
+        `Set Ngwg.core-repo-url in ngwg.yaml (ngwg init scaffolds it) or NGWG_CORE in the environment to a local core directory.`,
     );
   }
+  if (existsSync(dest)) rmSync(dest, { recursive: true, force: true });
+  renameSync(tmp, dest);
 }
 
 /**
  * Core resolution order:
- *   $NGWG_CORE → <cli>/../Ngwg-core (monorepo dev checkout) →
- *   <root>/.ngwg/core (auto-download on first use, configurable via
- *   Ngwg.core-repo-url)
+ *   $NGWG_CORE → <cli>/../Ngwg-core (monorepo dev convenience, NOT required) →
+ *   <root>/.ngwg/core (auto-download on first use from Ngwg.core-repo-url —
+ *   which ngwg init writes into the scaffold; the default is hardcoded below)
  */
 function resolveCoreDir(rootDir: string, coreRepoUrl: string, cliRoot: string): string {
   const env = process.env.NGWG_CORE;
