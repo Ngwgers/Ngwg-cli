@@ -55,7 +55,7 @@ jobs:
 
       - name: Deploy to Codeberg Pages
         uses: https://codeberg.org/git-pages/action@v2
-        with: |
+        with:
           site: https://${{ forge.repository_owner }}.codeberg.page/
           token: ${{ forge.token }}
           source: public

@@ -25,13 +25,17 @@ ngwg build
 | `ngwg clean` | 删除 public/ 与 .ngwg/ |
 | `ngwg help` / `version` | 帮助与版本 |
 
-主题管理：`themes.<name>: <url> | { url, options }` 声明主题来源，`theme` 字段只负责选择；远程/file:// 声明自动安装到 `.ngwg/themes/<name>`，本地路径直接使用（详见 [Ngwg-docs/configuration.md](../Ngwg-docs/configuration.md) 的"主题解析规则"）。
+主题管理：`themes.<name>: <url> | { url, options }` 声明主题来源，`theme` 选择；远程/file:// 声明自动安装到 `.ngwg/themes/<name>`，本地路径直接使用（详见 [Ngwg-docs/configuration.md](../Ngwg-docs/configuration.md) 的"主题解析规则"）。
 
 `--root=DIR` 可指定项目根目录（默认当前目录）。
 
 日志三档：默认打印 Core 版本、插件列表、dev 重载进度与错误警告；
 `--quiet` 只留错误与警告；`--verbose` 追加所有操作的 trace（读/写/解析/加载）。
 标志可放在命令前后任意位置，如 `ngwg --verbose build`。
+
+## 工作流
+
+为 GitHub 与 Codeberg 提供的实例工作流位于 `actions/` 目录。
 
 ## 许可证 / License
 
@@ -71,6 +75,10 @@ ngwg build
 `--root=DIR` selects the project root directory (defaults to the current directory).
 
 Logging has three levels: by default the Core version, plugin list, dev reload progress, errors and warnings are printed; `--quiet` keeps only errors and warnings; `--verbose` additionally traces every operation (reads/writes/parsing/loading). Flags may appear anywhere before or after the command, e.g. `ngwg --verbose build`.
+
+## Workflow
+
+Example workflows for GitHub and Codeberg are stored in `actions/` .
 
 ## License
 
