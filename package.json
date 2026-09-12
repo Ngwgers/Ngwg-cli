@@ -1,6 +1,6 @@
 {
   "name": "ngwg-cli",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Ngwg command-line interface (Fish entry, Bun implementation)",
   "type": "module",
   "module": "src/main.ts",
