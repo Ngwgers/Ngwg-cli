@@ -4,12 +4,13 @@
 // contract: it *resolves* the Ngwg core at runtime and, like a plugin,
 // downloads it into <root>/.ngwg/core when it is not available (its source
 // can be overridden via Ngwg.core-repo-url / $NGWG_CORE — `ngwg update core`
-// installs/refreshes the same copy). The default theme for bare `theme:`
-// names is ensured the same way into <root>/.ngwg/themes/pacific; additional
-// themes are declared under themes.<name> in ngwg.yaml and installed by the
-// core into <root>/.ngwg/themes/<name>. The official default plugins (files,
-// feature) are hardcoded here — this is the only place — and can be
-// overridden:
+// installs/refreshes the same copy). Themes are NOT managed here: `ngwg init`
+// scaffolds a themes.<name> source declaration in ngwg.yaml and the core's
+// theme management fetches the theme into <root>/.ngwg/themes/<name> on
+// first use; this bootstrap only injects what already exists on disk as a
+// fallback for bare theme names ($NGWG_DEFAULT_THEME, the project store).
+// The official default plugins (files, feature) are hardcoded here — this is
+// the only place — and can be overridden:
 //
 //   ngwg.yaml:  Ngwg.core-repo-url / Ngwg.theme-repo-url / themes.<name> /
 //               plugins.<key>
@@ -110,26 +111,26 @@ function resolveCoreDir(rootDir: string, coreRepoUrl: string, cliRoot: string): 
 }
 
 /**
- * Default theme resolution (for bare names like `theme: pacific`):
- *   $NGWG_DEFAULT_THEME → <cli>/../Ngwg-default-theme (dev checkout) →
- *   <root>/.ngwg/themes/pacific (auto-download, configurable via
- *   Ngwg.theme-repo-url; the legacy <root>/.ngwg/theme store is still
- *   honored so pre-themes-field projects keep working)
+ * Default theme injection (for bare names like `theme: pacific` that are not
+ * covered by a themes.<name> declaration): $NGWG_DEFAULT_THEME (explicit
+ * injection, e.g. hermetic test setups) → the project theme store
+ * (<root>/.ngwg/themes/pacific) → the legacy <root>/.ngwg/theme store.
+ *
+ * pacific is NOT special-cased into an auto-download here: `ngwg init`
+ * scaffolds a themes.pacific source declaration and the core's theme
+ * management fetches the theme on first use. This only resolves what already
+ * exists on disk; undefined when nothing does.
  */
-function resolveDefaultThemeDir(rootDir: string, themeRepoUrl: string, cliRoot: string): { name: string; dir: string } {
-  const env = process.env.NGWG_DEFAULT_THEME;
+function resolveDefaultThemeDir(rootDir: string): { name: string; dir: string } | undefined {
   const candidates: string[] = [];
+  const env = process.env.NGWG_DEFAULT_THEME;
   if (env) candidates.push(env);
-  candidates.push(path.resolve(cliRoot, "..", "Ngwg-default-theme"));
+  candidates.push(path.join(rootDir, ".ngwg", "themes", "pacific"));
+  candidates.push(path.join(rootDir, ".ngwg", "theme"));
   for (const c of candidates) {
     if (existsSync(path.join(c, "theme.yaml"))) return { name: "pacific", dir: c };
   }
-  const store = path.join(rootDir, ".ngwg", "themes", "pacific");
-  if (existsSync(path.join(store, "theme.yaml"))) return { name: "pacific", dir: store };
-  const legacy = path.join(rootDir, ".ngwg", "theme");
-  if (existsSync(path.join(legacy, "theme.yaml"))) return { name: "pacific", dir: legacy };
-  downloadRepo(themeRepoUrl, store, (dir) => existsSync(path.join(dir, "theme.yaml")));
-  return { name: "pacific", dir: store };
+  return undefined;
 }
 
 async function main(): Promise<void> {
@@ -140,9 +141,9 @@ async function main(): Promise<void> {
   const coreRepoUrl = normalizeRepoUrl(overrides["core-repo-url"] || DEFAULT_CORE_REPO);
   const themeRepoUrl = normalizeRepoUrl(overrides["theme-repo-url"] || DEFAULT_THEME_REPO);
   const coreDir = resolveCoreDir(rootDir, coreRepoUrl, cliRoot);
-  const defaultTheme = resolveDefaultThemeDir(rootDir, themeRepoUrl, cliRoot);
+  const defaultTheme = resolveDefaultThemeDir(rootDir);
   // child processes (plugin fish script → plugin-urls.ts) use it too
-  process.env.NGWG_DEFAULT_THEME = defaultTheme.dir;
+  if (defaultTheme) process.env.NGWG_DEFAULT_THEME = defaultTheme.dir;
 
   const defaultPlugins: Record<string, string> = {};
   for (const [key, url] of Object.entries(DEFAULT_PLUGINS)) {
