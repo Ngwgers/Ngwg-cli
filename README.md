@@ -5,19 +5,21 @@ Ngwg 的命令行入口。
 ## 结构
 
 ```
-bin/ngwg.fish              主入口：解析 --root、分发子命令
-lib/                       共享库（fish）：日志档位、配置刮取、core 解析/下载、
-                           受管 git 副本的抓取与更新
-subcommands/<cmd>/main.fish  每个子命令一个入口，彼此不依赖，
-                             只调用 lib（build/dev/init/add 经 bun 桥接到
-                             src/cli.ts 的 TS 实现，其余为纯 fish）
-src/cli.ts                 TS 实现（经 CoreApi 只依赖 Core 公共 API）
-src/commands/add.ts        ngwg add 的 TS 实现
-scripts/ngwg-plugins.fish  插件管理脚本（plugin/update 子命令与构建期自动安装共用）
+bin/ngwg.fish              主入口：解析 --root、分发子命令（无命令时回退到 help）
+lib/                       共享库：log/config/store/core.fish（日志、配置刮取、
+                           core 解析/下载、受管 git 副本抓取）、ngwg-plugins.fish
+                           （插件管理脚本）、bridge.ts（TS 桥接的公共函数）、
+                           plugin-urls.ts（插件声明读取，Bun 内置 YAML）
+subcommands/<cmd>/main.fish  每个子命令一个入口，彼此不依赖，只调用 lib；
+                             plugin/update/clean/help/version 为纯 fish，
+                             build/dev/add 另有一个 main.ts（函数式 TS 桥接，
+                             经 bun 调用 Core 公共 API）
 ```
 
 调用链：`bin → subcommands/<cmd>/main.fish → lib`；需要 Core 引擎的命令由 lib
-准备环境（`NGWG_CORE`、默认主题、默认插件源、仓库 URL）后 `bun src/cli.ts <cmd>`。
+准备环境（`NGWG_CORE`、默认主题、默认插件源、仓库 URL）后
+`bun subcommands/<cmd>/main.ts`。CLI 无 package.json——本项目基层不使用 npm；
+版本号维护在 `lib/config.fish`。
 
 ## 使用
 
@@ -71,21 +73,24 @@ The command-line entry point for Ngwg.
 
 ```
 bin/ngwg.fish              main entry: resolves --root, dispatches subcommands
-lib/                       shared library (fish): log levels, config scraping,
-                           core resolution/download, managed git store fetch
+                           (falls back to help without a command)
+lib/                       shared library: log/config/store/core.fish (log
+                           levels, config scraping, core resolution/download,
+                           managed git store fetch), ngwg-plugins.fish (plugin
+                           management script), bridge.ts (shared functions for
+                           the TS bridges), plugin-urls.ts (declaration reader
+                           on Bun's built-in YAML)
 subcommands/<cmd>/main.fish  one entry per subcommand, no cross-dependencies,
-                             lib only (build/dev/init/add bridge to the TS
-                             implementation in src/cli.ts via bun; the rest
-                             are pure fish)
-src/cli.ts                 TS implementation (depends on the core's public API only)
-src/commands/add.ts        TS implementation of ngwg add
-scripts/ngwg-plugins.fish  plugin management script (used by plugin/update and
-                           build-time auto-install)
+                             lib only; plugin/update/clean/help/version are
+                             pure fish, build/dev/add add a main.ts (functional
+                             TS bridge calling the core's public API via bun)
 ```
 
 Call chain: `bin → subcommands/<cmd>/main.fish → lib`; commands that need the
 core engine have lib prepare the environment (`NGWG_CORE`, default theme,
-default plugin sources, repo URLs) and then run `bun src/cli.ts <cmd>`.
+default plugin sources, repo URLs) and then run `bun subcommands/<cmd>/main.ts`.
+The CLI has no package.json — the base project does not use npm; the version
+lives in `lib/config.fish`.
 
 ## Usage
 

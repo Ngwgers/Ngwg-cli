@@ -1,5 +1,6 @@
 # lib/core.fish — core resolution, environment injection and the bridge to
-# the TS implementation (src/cli.ts) for commands fish alone cannot do
+# the TS command implementations (subcommands/<cmd>/<cmd>.ts) for commands
+# fish alone cannot do
 # (build/dev/init/add need the core's engine).
 
 function ngwg_cli_root
@@ -92,11 +93,13 @@ function ngwg_prepare
     set -gx NGWG_CORE (ngwg_resolve_core)
 end
 
-# hand a command over to the TS implementation in src/cli.ts
-function ngwg_run_ts  # <cmd> [args...]
+# hand a command over to its TS bridge: the sibling .ts of the calling
+# main.fish (subcommands/<cmd>/<cmd>.ts), executed by bun
+function ngwg_run_ts  # <main.fish path> [args...]
     if not type -q bun
         ngwg_error "bun is required but was not found in PATH"
         exit 1
     end
-    exec bun (ngwg_cli_root)/src/cli.ts $argv
+    set -l ts (string replace -r '\.fish$' '.ts' -- "$argv[1]")
+    exec bun "$ts" $argv[2..-1]
 end

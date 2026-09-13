@@ -1,8 +1,8 @@
 # lib/log.fish — log levels and output helpers for fish-side subcommands.
 #
 # Levels mirror the core's Logger: --quiet keeps errors/warnings only,
-# --verbose adds traces. TS-backed subcommands pass the flags through to
-# src/cli.ts instead; fish-side subcommands call ngwg_take_log_flags first.
+# --verbose adds traces. TS-backed subcommands pass the flags through to the
+# core's logger instead; fish-side subcommands call ngwg_take_log_flags first.
 
 function ngwg_take_log_flags
     set -g ngwg_log_level default

@@ -22,4 +22,4 @@ for a in $argv
     end
 end
 
-exec fish (ngwg_cli_root)/scripts/ngwg-plugins.fish $rest $NGWG_ROOT
+exec fish (ngwg_cli_root)/lib/ngwg-plugins.fish $rest $NGWG_ROOT

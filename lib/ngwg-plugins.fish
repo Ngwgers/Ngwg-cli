@@ -1,6 +1,5 @@
 #!/usr/bin/env fish
-# ngwg-plugins.fish — Ngwg plugin management (Fish glue, part of Ngwg-cli).
-# The core's location comes from $NGWG_CORE (exported by the CLI bootstrap).
+# ngwg-plugins.fish — Ngwg plugin management (lib/ of Ngwg-cli).
 #
 # Plugins are declared by URL in ngwg.yaml / theme.yaml. This script fetches
 # remote repos, precompiles when needed and installs them into the local
@@ -109,16 +108,12 @@ function is_installed
     test -f (plugin_store $root)/$name/ngwg-plugin.yaml
 end
 
-# resolve plugin declarations from ngwg.yaml + theme.yaml via the TS helper
+# resolve plugin declarations from ngwg.yaml + theme.yaml via the helper
 # (status dirname, not the top-level $script_dir: function-local scope does
-# not see it, and this function is also called from other functions). The
-# script lives in the CLI now, so the core root comes from $NGWG_CORE —
-# the CLI bootstrap exports it before invoking this script.
+# not see it, and this function is also called from other functions).
+# plugin-urls.ts is plain Bun (runtime YAML); only NGWG_DEFAULT_THEME matters.
 function read_declarations
     set -l root $argv[1]
-    if not set -q NGWG_CORE
-        fail "NGWG_CORE is not set — invoke this script through the ngwg CLI"
-    end
     bun (realpath (status dirname))/plugin-urls.ts (realpath $root)
     or fail "could not read plugin declarations from $root"
 end

@@ -44,23 +44,33 @@ function update_one  # <label> <dest> <validate> <url> → 0 ok / 1 failed
     return 0
 end
 
+function is_local_url
+    string match -q '/*' -- "$argv[1]"; or string match -q './*' -- "$argv[1]"; or string match -q '../*' -- "$argv[1]"
+end
+
 # source for a theme store copy: themes.<name> declaration → CLI default
-# theme URL (pacific) → the copy's own git origin
-function theme_url_for  # <name> <storeDir>
-    set -l url (ngwg_declared_theme_url "$argv[1]")
-    if test -n "$url"
-        echo "$url"
+# theme URL (pacific) → the copy's own git origin. The local-path skip applies
+# only to declarations — a git origin is always fetchable.
+# Prints two lines: the source kind, then the URL (empty output = no source).
+function theme_source  # <name> <storeDir>
+    set -l name "$argv[1]"
+    set -l store "$argv[2]"
+    set -l declared (ngwg_declared_theme_url "$name")
+    if test -n "$declared"
+        echo decl
+        echo "$declared"
         return 0
     end
-    if test "$argv[1]" = pacific
+    if test "$name" = pacific
+        echo default
         ngwg_theme_repo_url
         return 0
     end
-    ngwg_git_origin "$argv[2]"
-end
-
-function is_local_url
-    string match -q '/*' -- "$argv[1]"; or string match -q './*' -- "$argv[1]"; or string match -q '../*' -- "$argv[1]"
+    set -l origin (ngwg_git_origin "$store")
+    if test -n "$origin"
+        echo origin
+        echo "$origin"
+    end
 end
 
 function update_themes  # [name...]
@@ -72,13 +82,15 @@ function update_themes  # [name...]
     if test (count $names) -gt 0
         for name in $names
             set -l store "$themes_dir/$name"
-            set -l url (theme_url_for "$name" "$store")
+            set -l src (theme_source "$name" "$store")
+            set -l kind "$src[1]"
+            set -l url "$src[2]"
             if test -z "$url"
                 ngwg_error "cannot update theme \"$name\": no source known. Declare themes.$name: <repo-url> in ngwg.yaml (or keep the store copy's git origin), then rerun ngwg update theme $name."
                 set failed 1
                 continue
             end
-            if is_local_url "$url"
+            if test "$kind" = decl; and is_local_url "$url"
                 ngwg_info "theme \"$name\" is declared as a local path ($url) — used directly, nothing to fetch"
                 continue
             end
@@ -108,12 +120,14 @@ function update_themes  # [name...]
             if not test -f "$store/theme.yaml"
                 continue
             end
-            set -l url (theme_url_for "$entry" "$store")
+            set -l src (theme_source "$entry" "$store")
+            set -l kind "$src[1]"
+            set -l url "$src[2]"
             if test -z "$url"
                 ngwg_warn "theme \"$entry\" has no known source — skipped. Declare themes.$entry: <repo-url> in ngwg.yaml to make it updatable."
                 continue
             end
-            if is_local_url "$url"
+            if test "$kind" = decl; and is_local_url "$url"
                 ngwg_info "theme \"$entry\" is declared as a local path ($url) — used directly, nothing to fetch"
                 continue
             end
@@ -129,7 +143,7 @@ end
 
 function update_plugins  # [name...]
     set -l names $argv
-    set -l script (ngwg_cli_root)/scripts/ngwg-plugins.fish
+    set -l script (ngwg_cli_root)/lib/ngwg-plugins.fish
     if test (count $names) -eq 0
         fish "$script" update-all $NGWG_ROOT
         return $status

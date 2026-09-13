@@ -1,12 +1,13 @@
-// Helper used by scripts/ngwg-plugins.fish (Fish stays the glue; this tiny
-// Bun script only extracts plugin declarations from ngwg.yaml + theme.yaml).
+// lib/plugin-urls.ts — extract plugin declarations from ngwg.yaml + theme.yaml
+// for lib/ngwg-plugins.fish. Plain Bun: YAML comes from the runtime, no core
+// dependency. NGWG_DEFAULT_THEME (exported by the fish lib) is consulted for
+// theme-required declarations of bare theme names.
 //
-// Usage: bun scripts/plugin-urls.ts <project-root>
+// Usage: bun lib/plugin-urls.ts <project-root>
 // Prints one line per plugin:  <scope>\t<name>\t<url>
 //   scope = user | theme-required | theme-optional
 
 import * as path from "node:path";
-import { pathToFileURL } from "node:url";
 import { existsSync, readFileSync } from "node:fs";
 
 const root = process.argv[2];
@@ -14,24 +15,15 @@ if (!root) {
   console.error("usage: bun plugin-urls.ts <project-root>");
   process.exit(2);
 }
-// the script ships with the CLI; the YAML parser comes from the core, whose
-// location the CLI bootstrap exports as NGWG_CORE
-if (!process.env.NGWG_CORE) {
-  console.error("plugin-urls: NGWG_CORE is not set — invoke through the ngwg CLI");
-  process.exit(2);
-}
-const { parseYaml } = await import(
-  pathToFileURL(path.join(process.env.NGWG_CORE, "src", "index.ts")).href
-);
 
-  const configPath = [path.join(root, "ngwg.yaml"), path.join(root, "ngwg.yml")].find((p) => existsSync(p));
-  if (configPath) {
-    const cfg = parseYaml(readFileSync(configPath, "utf8"));
-    for (const [name, decl] of Object.entries(cfg?.plugins ?? {})) {
-      // plugins.<name> is a URL string or a { url, option } declaration
-      const url = typeof decl === "string" ? decl : (decl as any)?.url;
-      if (typeof url === "string" && url.trim()) console.log(`user\t${name}\t${url.trim()}`);
-    }
+const configPath = [path.join(root, "ngwg.yaml"), path.join(root, "ngwg.yml")].find((p) => existsSync(p));
+if (configPath) {
+  const cfg = Bun.YAML.parse(readFileSync(configPath, "utf8"));
+  for (const [name, decl] of Object.entries(cfg?.plugins ?? {})) {
+    // plugins.<name> is a URL string or a { url, option } declaration
+    const url = typeof decl === "string" ? decl : (decl as any)?.url;
+    if (typeof url === "string" && url.trim()) console.log(`user\t${name}\t${url.trim()}`);
+  }
   // theme may be a string or a { <name-or-path>: { overrides } } map
   const theme = typeof cfg?.theme === "object" && cfg?.theme !== null ? Object.keys(cfg.theme)[0] : cfg?.theme;
   // resolve theme.yaml to read its plugin declarations too. Candidates mirror
@@ -56,7 +48,7 @@ const { parseYaml } = await import(
     const fallback = process.env.NGWG_DEFAULT_THEME;
     if (fallback && existsSync(path.join(fallback, "theme.yaml"))) {
       try {
-        const manifest = parseYaml(readFileSync(path.join(fallback, "theme.yaml"), "utf8"));
+        const manifest = Bun.YAML.parse(readFileSync(path.join(fallback, "theme.yaml"), "utf8"));
         if (manifest?.name === theme) candidates.push(fallback);
       } catch {
         /* unreadable manifest — skip the fallback */
@@ -65,7 +57,7 @@ const { parseYaml } = await import(
   }
   const themeRoot = candidates.find((p) => existsSync(path.join(p, "theme.yaml")));
   if (themeRoot) {
-    const tc = parseYaml(readFileSync(path.join(themeRoot, "theme.yaml"), "utf8"));
+    const tc = Bun.YAML.parse(readFileSync(path.join(themeRoot, "theme.yaml"), "utf8"));
     for (const [name, url] of Object.entries(tc?.plugins?.required ?? {})) {
       if (typeof url === "string" && url.trim()) console.log(`theme-required\t${name}\t${url.trim()}`);
     }

@@ -6,7 +6,7 @@
 # Shared plumbing (config scraping, core resolution, repo fetch, logging)
 # lives in lib/; every subcommand is self-contained — they never call each
 # other. Commands that need the core's engine (build/dev/init/add) bridge
-# to the TS implementation via `bun src/cli.ts`; plugin/update/clean/help/
+# to its TS bridge via `bun subcommands/<cmd>/<cmd>.ts`; plugin/update/clean/help/
 # version run in pure fish.
 #
 # Usage: ngwg <command> [args…]   — see `ngwg help`

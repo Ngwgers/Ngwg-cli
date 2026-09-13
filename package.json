@@ -1,9 +1,0 @@
-{
-  "name": "ngwg-cli",
-  "version": "0.2.0",
-  "description": "Ngwg command-line interface (fish subcommands + TS engine bridge)",
-  "type": "module",
-  "bin": {
-    "ngwg": "bin/ngwg.fish"
-  }
-}

@@ -7,4 +7,4 @@ source (realpath (status dirname)/../../lib/store.fish)
 source (realpath (status dirname)/../../lib/core.fish)
 
 ngwg_prepare
-ngwg_run_ts build $argv
+ngwg_run_ts (status filename) $argv

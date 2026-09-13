@@ -21,12 +21,9 @@ function ngwg_official_url
     end
 end
 
-# the CLI's own version, read from its package.json
+# the CLI's own version (single source of truth — there is no package.json)
 function ngwg_cli_version
-    set -l file (realpath (status dirname))/../package.json
-    if test -f "$file"
-        string match -rg '"version":\s*"([^"]+)"' <$file
-    end
+    echo 0.2.0
 end
 
 # expand a `user/repo` shorthand into a full GitHub URL (official org)

@@ -1,4 +1,4 @@
-// `ngwg add` — create a new post.
+// ngwg add — create a new post (subcommands/add/main.fish hands over here).
 //
 // Two modes:
 //   interactive (default)  a minimal TUI: title, publish date (pre-filled
@@ -10,22 +10,10 @@
 //
 // The post lands in <source_dir>/_posts/<date>-<slug>.md.
 
+import { applyLogLevel, loadCore, rootDir, runMain } from "../../lib/bridge.ts";
 import * as path from "node:path";
 import { existsSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
-// the CLI talks to the core only through its public API (src/index.ts); the
-// resolved module is injected by the CLI entry (setCoreApi) — tests inject it
-// the same way instead of reaching into core internals
-import type { CoreApi } from "../core-api.ts";
-
-let injectedCore: CoreApi | null = null;
-export function setCoreApi(core: CoreApi): void {
-  injectedCore = core;
-}
-function core(): CoreApi {
-  if (!injectedCore) throw new Error("core API not injected — the CLI entry must call setCoreApi()");
-  return injectedCore;
-}
 
 type Log = { ok(msg: string): void; info(msg: string): void };
 
@@ -125,15 +113,15 @@ export function buildPostContent(args: { label: string; date: string; tags: stri
 
 /** Resolve where the new post goes (exported for tests). */
 export async function resolveTarget(
+  core: any,
   rootDir: string,
   args: { label: string; date: string; tags: string[]; categories: string[] },
 ): Promise<{ file: string; content: string }> {
-  const c = core();
-  const config = await c.loadUserConfig(rootDir).catch((e) => {
-    throw new c.ConfigError(`${(e as Error).message}\n运行 \`ngwg init\` 先创建站点配置。`);
+  const config = await core.loadUserConfig(rootDir).catch((e: Error) => {
+    throw new (core.ConfigError as new (m: string) => Error)(`${e.message}\n运行 \`ngwg init\` 先创建站点配置。`);
   });
   const postsDir = path.resolve(rootDir, config.source_dir ?? "source", "_posts");
-  const file = path.join(postsDir, `${args.date}-${c.slugify(args.label)}.md`);
+  const file = path.join(postsDir, `${args.date}-${core.slugify(args.label)}.md`);
   return { file, content: buildPostContent(args) };
 }
 
@@ -141,7 +129,7 @@ function validDate(v: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(v) && !isNaN(new Date(v).getTime());
 }
 
-export async function addCommand(argv: string[], rootDir: string, log: Log): Promise<void> {
+export async function addCommand(core: any, argv: string[], root: string, log: Log): Promise<void> {
   const args = parseAddArgs(argv);
   if (args.help) {
     console.log(ADD_USAGE);
@@ -154,7 +142,7 @@ export async function addCommand(argv: string[], rootDir: string, log: Log): Pro
     if (!process.stdin.isTTY) {
       throw new Error("stdin 不是终端，无法启动交互界面 —— 请使用参数：\n" + ADD_USAGE);
     }
-    const form = await runTui(rootDir);
+    const form = await runTui(core, root);
     if (!form) {
       log.info("已取消，未创建任何文件");
       return;
@@ -171,7 +159,7 @@ export async function addCommand(argv: string[], rootDir: string, log: Log): Pro
     parsed = { label: args.label.trim(), date, tags: args.tags, categories: args.categories };
   }
 
-  const { file, content } = await resolveTarget(rootDir, parsed);
+  const { file, content } = await resolveTarget(core, root, parsed);
   if (existsSync(file)) {
     throw new Error(`文件已存在：${file}`);
   }
@@ -229,12 +217,12 @@ function newFields(): Field[] {
   ];
 }
 
-async function runTui(rootDir: string): Promise<FormResult | null> {
-  return runTuiSession(rootDir, newFields());
+async function runTui(core: any, root: string): Promise<FormResult | null> {
+  return runTuiSession(core, root, newFields());
 }
 
 /** The form + confirmation loop (fresh start and "返回编辑" share it). */
-async function runTuiSession(rootDir: string, fields: Field[]): Promise<FormResult | null> {
+async function runTuiSession(core: any, root: string, fields: Field[]): Promise<FormResult | null> {
   let active = 0;
   let message = "";
 
@@ -296,7 +284,7 @@ async function runTuiSession(rootDir: string, fields: Field[]): Promise<FormResu
 
     // ---- confirmation loop ----
     while (true) {
-      const target = await resolveTarget(rootDir, parsed).catch((e: Error) => ({
+      const target = await resolveTarget(core, root, parsed).catch((e: Error) => ({
         file: `（配置错误：${e.message.split("\n")[0]}）`,
         content: "",
       }));
@@ -314,11 +302,23 @@ async function runTuiSession(rootDir: string, fields: Field[]): Promise<FormResu
       if (key === "y" || key === "\r" || key === "\n") return parsed;
       if (key === "e" || key === "\x1b[A" || key === "\x1b[B") {
         active = 0;
-        return await runTuiSession(rootDir, fields); // resume editing, values kept
+        return await runTuiSession(core, root, fields); // resume editing, values kept
       }
       if (key === "q" || key === "\x03") return null;
     }
   } finally {
     process.stdin.setRawMode(false);
   }
+}
+
+// entry: fish resolves the core and hands over; raw-mode stdin keeps the
+// event loop alive after TUI completion, so exit explicitly
+if (import.meta.main) {
+  await runMain(async () => {
+    const core = await loadCore();
+    const log = new core.Logger("ngwg");
+    const rest = applyLogLevel(core, process.argv.slice(2));
+    await addCommand(core, rest, rootDir(), log);
+    process.exit(0);
+  });
 }
