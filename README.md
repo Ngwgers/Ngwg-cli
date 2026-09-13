@@ -2,6 +2,23 @@
 
 Ngwg 的命令行入口。
 
+## 结构
+
+```
+bin/ngwg.fish              主入口：解析 --root、分发子命令
+lib/                       共享库（fish）：日志档位、配置刮取、core 解析/下载、
+                           受管 git 副本的抓取与更新
+subcommands/<cmd>/main.fish  每个子命令一个入口，彼此不依赖，
+                             只调用 lib（build/dev/init/add 经 bun 桥接到
+                             src/cli.ts 的 TS 实现，其余为纯 fish）
+src/cli.ts                 TS 实现（经 CoreApi 只依赖 Core 公共 API）
+src/commands/add.ts        ngwg add 的 TS 实现
+scripts/ngwg-plugins.fish  插件管理脚本（plugin/update 子命令与构建期自动安装共用）
+```
+
+调用链：`bin → subcommands/<cmd>/main.fish → lib`；需要 Core 引擎的命令由 lib
+准备环境（`NGWG_CORE`、默认主题、默认插件源、仓库 URL）后 `bun src/cli.ts <cmd>`。
+
 ## 使用
 
 ```fish
@@ -49,6 +66,26 @@ This project is licensed under the [GNU General Public License v3.0 (GPL-3.0)](L
 # Ngwg-cli
 
 The command-line entry point for Ngwg.
+
+## Layout
+
+```
+bin/ngwg.fish              main entry: resolves --root, dispatches subcommands
+lib/                       shared library (fish): log levels, config scraping,
+                           core resolution/download, managed git store fetch
+subcommands/<cmd>/main.fish  one entry per subcommand, no cross-dependencies,
+                             lib only (build/dev/init/add bridge to the TS
+                             implementation in src/cli.ts via bun; the rest
+                             are pure fish)
+src/cli.ts                 TS implementation (depends on the core's public API only)
+src/commands/add.ts        TS implementation of ngwg add
+scripts/ngwg-plugins.fish  plugin management script (used by plugin/update and
+                           build-time auto-install)
+```
+
+Call chain: `bin → subcommands/<cmd>/main.fish → lib`; commands that need the
+core engine have lib prepare the environment (`NGWG_CORE`, default theme,
+default plugin sources, repo URLs) and then run `bun src/cli.ts <cmd>`.
 
 ## Usage
 

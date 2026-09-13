@@ -1,18 +1,25 @@
 // All ngwg command implementations (dispatch, init, add, clean, plugin and
 // update management) live HERE, in the CLI — the core is a replaceable
-// engine accessed only through its public API (src/index.ts), which the
-// bootstrap resolves, downloads and injects as `core`. The plugin-management
-// fish script ships with the CLI as well; the core only ever sees it as the
-// injected `pluginScript` option (used for build-time auto-install).
+// engine accessed only through its public API (src/index.ts), which the fish
+// lib (lib/core.fish) resolves, downloads and injects as `core`. The
+// plugin-management fish script ships with the CLI as well; the core only
+// ever sees it as the injected `pluginScript` option (used for build-time
+// auto-install).
 //
 //   import { cliMain } from "./cli.ts";
 //   await cliMain({ core, argv, rootDir, coreDir, ... });
+//
+// The fish subcommands (subcommands/*/main.fish) prepare the environment
+// (NGWG_CORE, NGWG_DEFAULT_THEME, NGWG_*_PLUGIN, NGWG_*_REPO_URL, NGWG_ROOT)
+// and exec this file with `bun src/cli.ts <command> [args…]`; the entry at
+// the bottom assembles CliOptions from that environment.
 
 import { addCommand, setCoreApi } from "./commands/add.ts";
 import type { CoreApi } from "./core-api.ts";
 import { spawnSync } from "node:child_process";
 import { renameSync, existsSync, readdirSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import * as path from "node:path";
+import { pathToFileURL } from "node:url";
 
 const USAGE = `ngwg — a quiet static site generator
 
@@ -471,4 +478,35 @@ function updatePlugins(names: string[], pluginScript: string, root: string): num
     if (res.status !== 0) return res.status ?? 1;
   }
   return 0;
+}
+
+// Standalone entry: the fish subcommands prepared the environment and exec
+// this file (`bun src/cli.ts <command> [args…]`). Only commands that need
+// the core's engine land here — plugin/update/clean/help/version are pure
+// fish under subcommands/.
+if (import.meta.main) {
+  const cliRoot = path.resolve(import.meta.dir, "..");
+  const coreDir = process.env.NGWG_CORE;
+  if (!coreDir) {
+    console.error("ngwg: NGWG_CORE is not set — invoke through bin/ngwg.fish");
+    process.exit(1);
+  }
+  const core = (await import(pathToFileURL(path.join(coreDir, "src", "index.ts")).href)) as CoreApi;
+  const defaultPlugins: Record<string, string> = {};
+  for (const key of ["files", "feature"]) {
+    const v = process.env[`NGWG_${key.toUpperCase()}_PLUGIN`];
+    if (v) defaultPlugins[key] = v;
+  }
+  const themeDir = process.env.NGWG_DEFAULT_THEME;
+  await cliMain({
+    core,
+    argv: process.argv.slice(2),
+    coreDir,
+    rootDir: process.env.NGWG_ROOT || process.cwd(),
+    defaultPlugins,
+    pluginScript: path.join(cliRoot, "scripts", "ngwg-plugins.fish"),
+    defaultTheme: themeDir ? { name: "pacific", dir: themeDir } : undefined,
+    coreRepoUrl: process.env.NGWG_CORE_REPO_URL,
+    themeRepoUrl: process.env.NGWG_THEME_REPO_URL,
+  });
 }
