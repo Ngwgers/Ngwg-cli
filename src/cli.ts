@@ -210,14 +210,15 @@ async function cmdInit(root: string, log: { ok(msg: string): void; info(msg: str
     process.exit(1);
   }
   mkdirSync(path.join(root, "source", "_posts"), { recursive: true });
-  // sources are injected by the CLI (Core knows no default repos)
+  // sources are injected by the CLI (Core knows no default repos); the theme
+  // source is declared via themes.pacific — theme-repo-url is the legacy
+  // override and does not belong in a fresh scaffold
   const themeSource = themeRepoUrl
     ? `themes:\n  pacific: ${themeRepoUrl}\n`
     : `# declare where the theme comes from, e.g.:\n# themes:\n#   pacific: https://github.com/Ngwgers/Ngwg-default-theme\n`;
-  const ngwgSection =
-    coreRepoUrl || themeRepoUrl
-      ? `# repo sources used by the CLI\nNgwg:\n${coreRepoUrl ? `  core-repo-url: ${coreRepoUrl}\n` : ""}${themeRepoUrl ? `  theme-repo-url: ${themeRepoUrl}\n` : ""}`
-      : `# Ngwg:\n#   core-repo-url: https://github.com/Ngwgers/Ngwg-core\n`;
+  const ngwgSection = coreRepoUrl
+    ? `# repo sources used by the CLI\nNgwg:\n  core-repo-url: ${coreRepoUrl}\n`
+    : `# Ngwg:\n#   core-repo-url: https://github.com/Ngwgers/Ngwg-core\n`;
   writeFileSync(
     configPath,
     `# ngwg configuration\ntitle: My Site\ndescription: 安静的站点\nbaseurl: /\ntheme: pacific\n${themeSource}${ngwgSection}source_dir: source\npublic_dir: public\n`,

@@ -33,7 +33,7 @@ ngwg build
 | --- | --- |
 | `ngwg build` | 生成 public |
 | `ngwg dev [--port N] [--speed KBPS]` | dev daemon + 实时重载；`--speed` 模拟弱网（10 ≈ 10KB 文件 1 秒，0/负数禁用），也可在 ngwg.yaml 用 `dev_speed` 配置 |
-| `ngwg init` | 在当前目录生成 ngwg.yaml 与 source/_posts 脚手架（含默认主题源引用与 `Ngwg.core-repo-url`/`theme-repo-url`） |
+| `ngwg init` | 在当前目录生成 ngwg.yaml 与 source/_posts 脚手架（含 `themes.pacific` 源引用与 `Ngwg.core-repo-url`） |
 | `ngwg add [-L 标题] [-T 标签...] [-C 分类...] [-D 日期]` | 新建文章：不带参数时启动交互式表单（TUI，日期自动填今天，↑↓ 切换、Enter 确认、`e` 返回编辑）；带参数时直接创建（`-D` 缺省今天，`source_dir` 读取自配置） |
 | `ngwg plugin install <name> <url>` | 安装插件 |
 | `ngwg plugin install-all` | 安装配置中声明的全部插件 |
