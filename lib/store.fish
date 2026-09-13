@@ -14,7 +14,9 @@ function ngwg_store_fetch  # <url> <dest> <validate>
     set -l tmp "$dest.download"
     rm -rf "$tmp"
     mkdir -p (dirname "$dest")
-    if not git clone --depth 1 (ngwg_normalize_url "$argv[1]") "$tmp" >/dev/null 2>&1
+    # git prints its own log ("Cloning into …", progress on a TTY, errors):
+    # let it through instead of hiding it behind a spinner
+    if not git clone --progress --depth 1 (ngwg_normalize_url "$argv[1]") "$tmp"
         rm -rf "$tmp"
         return 1
     end
@@ -35,7 +37,7 @@ function ngwg_store_update  # <url> <dest> <validate>
     set -l validate "$argv[3]"
     set -l tmp "$dest.update"
     rm -rf "$tmp"
-    if not git clone --depth 1 (ngwg_normalize_url "$argv[1]") "$tmp" >/dev/null 2>&1
+    if not git clone --progress --depth 1 (ngwg_normalize_url "$argv[1]") "$tmp"
         rm -rf "$tmp"
         return 1
     end

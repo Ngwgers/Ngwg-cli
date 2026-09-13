@@ -32,11 +32,11 @@ function update_one  # <label> <dest> <validate> <url> → 0 ok / 1 failed
         return 0
     end
     if test -z "$url"
-        ngwg_error "cannot update $label: no source known for it. Set Ngwg.core-repo-url / Ngwg.theme-repo-url or a themes.<name> declaration in ngwg.yaml, then rerun ngwg update."
+        ngwg_error "cannot update $label: no source known for it. Set Ngwg.core-repo-url or a themes.<name> declaration in ngwg.yaml, then rerun ngwg update."
         return 1
     end
     if not ngwg_store_update "$url" "$dest" "$validate"
-        ngwg_error "could not update $label from $url. Check Ngwg.core-repo-url / Ngwg.theme-repo-url in ngwg.yaml, then rerun ngwg update."
+        ngwg_error "could not update $label from $url. Check the theme declaration or Ngwg.core-repo-url in ngwg.yaml, then rerun ngwg update."
         return 1
     end
     ngwg_ok "updated $label → $dest"
@@ -76,7 +76,6 @@ end
 function update_themes  # [name...]
     set -l names $argv
     set -l themes_dir "$NGWG_ROOT/.ngwg/themes"
-    set -l legacy "$NGWG_ROOT/.ngwg/theme"
     set -l failed 0
 
     if test (count $names) -gt 0
@@ -110,10 +109,6 @@ function update_themes  # [name...]
 
     # bare refresh: every existing store copy, nothing installed
     set -l updated 0
-    if test -f "$legacy/theme.yaml"
-        update_one theme "$legacy" theme.yaml (ngwg_theme_repo_url); or set failed 1
-        set updated (math $updated + 1)
-    end
     if test -d "$themes_dir"
         for entry in (command ls -1 "$themes_dir")
             set -l store "$themes_dir/$entry"
@@ -163,7 +158,6 @@ switch $target
         # bare update refreshes what exists — it never installs anything new
         set -l failed 0
         update_one core "$NGWG_ROOT/.ngwg/core" src/index.ts (ngwg_core_repo_url); or set failed 1
-        update_one theme "$NGWG_ROOT/.ngwg/theme" theme.yaml (ngwg_theme_repo_url); or set failed 1
         update_themes; or set failed 1
         update_plugins; or set failed 1
         exit $failed

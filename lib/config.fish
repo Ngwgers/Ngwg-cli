@@ -74,8 +74,6 @@ function ngwg_scrape_ngwg_section
             switch $key
                 case 'core-repo-url:*'
                     set -g ngwg_cfg_core_url (ngwg_yaml_value $key)
-                case 'theme-repo-url:*'
-                    set -g ngwg_cfg_theme_url (ngwg_yaml_value $key)
             end
         end
     end <$file

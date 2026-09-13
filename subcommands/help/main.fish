@@ -43,7 +43,6 @@ overridden in ngwg.yaml:
 
   Ngwg:
     core-repo-url: https://github.com/Ngwgers/Ngwg-core
-    theme-repo-url: https://github.com/Ngwgers/Ngwg-default-theme
   themes:
     pacific: https://github.com/Ngwgers/Ngwg-default-theme
     other:

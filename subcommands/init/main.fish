@@ -1,8 +1,7 @@
 #!/usr/bin/env fish
 # ngwg init — scaffold ngwg.yaml + source/_posts. Pure fish: the scaffold is
 # plain file writing; repo sources come from lib/config.fish (scraped or
-# official defaults). The theme source is declared via themes.pacific — the
-# legacy Ngwg.theme-repo-url override stays out of fresh scaffolds.
+# official defaults). The theme source is declared via themes.pacific.
 
 source (realpath (status dirname)/../../lib/log.fish)
 source (realpath (status dirname)/../../lib/config.fish)

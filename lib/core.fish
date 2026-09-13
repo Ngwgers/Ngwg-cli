@@ -16,13 +16,9 @@ function ngwg_core_repo_url
     ngwg_normalize_url "$url"
 end
 
-# URL for the default theme repo: Ngwg.theme-repo-url in ngwg.yaml → official default
+# URL for the official default theme repo
 function ngwg_theme_repo_url
-    set -l url "$ngwg_cfg_theme_url"
-    if test -z "$url"
-        set url (ngwg_official_url theme)
-    end
-    ngwg_normalize_url "$url"
+    ngwg_normalize_url (ngwg_official_url theme)
 end
 
 # resolve the Ngwg core: $NGWG_CORE → monorepo sibling checkout →
@@ -56,14 +52,14 @@ function ngwg_resolve_core
 end
 
 # existing default-theme copy for bare theme names like `theme: pacific`:
-# $NGWG_DEFAULT_THEME → project theme store → legacy .ngwg/theme.
+# $NGWG_DEFAULT_THEME → project theme store.
 # Echoes the directory, or nothing when no copy exists on disk.
 function ngwg_default_theme_dir
     set -l candidates
     if set -q NGWG_DEFAULT_THEME
         set -a candidates $NGWG_DEFAULT_THEME
     end
-    set -a candidates "$NGWG_ROOT/.ngwg/themes/pacific" "$NGWG_ROOT/.ngwg/theme"
+    set -a candidates "$NGWG_ROOT/.ngwg/themes/pacific"
     for c in $candidates
         if test -f "$c/theme.yaml"
             echo $c
@@ -79,7 +75,6 @@ function ngwg_prepare
     ngwg_ensure_root
     ngwg_scrape_ngwg_section
     set -gx NGWG_CORE_REPO_URL (ngwg_core_repo_url)
-    set -gx NGWG_THEME_REPO_URL (ngwg_theme_repo_url)
     if not set -q NGWG_FILES_PLUGIN
         set -gx NGWG_FILES_PLUGIN (ngwg_official_url files)
     end
