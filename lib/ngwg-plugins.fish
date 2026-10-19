@@ -8,9 +8,9 @@
 #
 # Usage:
 #   ngwg-plugins.fish install <name> <url> [project-root]
-#   ngwg-plugins.fish install-all [project-root]     # everything in the configs
+#   ngwg-plugins.fish install-all [project-root]     # everything in the configs + built-in fallbacks
 #   ngwg-plugins.fish update <name> [project-root]   # re-fetch an installed plugin
-#   ngwg-plugins.fish update-all [project-root]      # re-fetch every installed one
+#   ngwg-plugins.fish update-all [project-root]      # re-fetch installed ones; install missing built-in fallbacks
 #   ngwg-plugins.fish list [project-root]
 #   ngwg-plugins.fish remove <name> [project-root]
 #   ngwg-plugins.fish path [project-root]            # print the plugin store
@@ -132,6 +132,20 @@ function declared_url
     end
 end
 
+# declared_scope <name> <root>: print the scope (user / theme-required /
+# theme-optional / default) a plugin is declared with (empty when unknown)
+function declared_scope
+    set -l name $argv[1]
+    set -l root $argv[2]
+    for line in (read_declarations $root)
+        set -l parts (string split \t -- $line)
+        if test "$parts[2]" = "$name"
+            echo $parts[1]
+            return
+        end
+    end
+end
+
 set -l cmd $argv[1]
 set -l rest $argv[2..]
 
@@ -154,7 +168,7 @@ switch $cmd
             set -l name $parts[2]
             set -l url $parts[3]
             switch $scope
-                case user theme-required
+                case user theme-required default
                     fetch_plugin "$name" "$url" "$store/$name"
                 case theme-optional
                     if not is_installed "$name" "$root"
@@ -170,10 +184,17 @@ switch $cmd
         test -z "$root"; and set root .
         test -n "$name"; or fail "usage: ngwg-plugins.fish update <name> [project-root]"
         set -l store (plugin_store $root)
-        test -d "$store/$name"; or fail "plugin '$name' is not installed (try: ngwg plugin install-all)"
         set -l url (declared_url "$name" $root)
         test -n "$url"; or fail "plugin '$name' has no URL declared in ngwg.yaml / theme.yaml — update the declaration first"
-        fetch_plugin "$name" "$url" "$store/$name" replace
+        if test -d "$store/$name"
+            fetch_plugin "$name" "$url" "$store/$name" replace
+        else if test (declared_scope "$name" $root) = default
+            # built-in fallbacks can be installed explicitly even when the
+            # config does not mention them
+            fetch_plugin "$name" "$url" "$store/$name"
+        else
+            fail "plugin '$name' is not installed (try: ngwg plugin install-all)"
+        end
 
     case update-all
         set -l root $rest[1]
@@ -187,6 +208,11 @@ switch $cmd
             set -l url $parts[3]
             if test -d "$store/$name"
                 fetch_plugin "$name" "$url" "$store/$name" replace
+                set updated (math $updated + 1)
+            else if test "$scope" = default
+                # built-in fallbacks are required even when the config does
+                # not mention them: detect and install the missing copy
+                fetch_plugin "$name" "$url" "$store/$name"
                 set updated (math $updated + 1)
             else
                 echo "plugin '$name' ($scope) is not installed — skipped"
@@ -232,9 +258,9 @@ switch $cmd
     case '*'
         echo "usage: ngwg-plugins.fish {install|install-all|update|update-all|list|remove|path} [args]"
         echo "  install <name> <url> [root]   fetch & install one plugin"
-        echo "  install-all [root]            install everything declared in ngwg.yaml / theme.yaml"
+        echo "  install-all [root]            install declared plugins and missing built-in fallbacks"
         echo "  update <name> [root]          re-fetch an installed plugin from its declared URL"
-        echo "  update-all [root]             re-fetch every installed plugin declared in the configs"
+        echo "  update-all [root]             re-fetch installed plugins; install missing built-in fallbacks"
         echo "  list [root]                   list installed plugins"
         echo "  remove <name> [root]          remove an installed plugin"
         echo "  path [root]                   print the plugin store directory"

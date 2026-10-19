@@ -21,9 +21,9 @@ ngwg build
 | `ngwg init` | 在当前目录生成默认配置文件与基本目录 |
 | `ngwg add [-L 标题] [-T 标签...] [-C 分类...] [-D 日期]` | 新建文章：不带参数时启动交互式表单；带参数时则直接创建。 |
 | `ngwg plugin install <name> <url>` | 从远程仓库安装插件 |
-| `ngwg plugin install-all` | 安装配置中声明的全部插件 |
+| `ngwg plugin install-all` | 安装配置中声明的全部插件，以及缺失的内置回退插件（files / feature） |
 | `ngwg plugin list / remove / path` | 插件目录管理 |
-| `ngwg update [core\|theme [name...]\|plugin [name...]]` | 更新本地存储的依赖副本；不带参数时全部更新，`plugin`/`theme` 可追加 name 只更新指定项 |
+| `ngwg update [core\|theme [name...]\|plugin [name...]]` | 更新本地存储的依赖副本；不带参数时全部更新（内置回退插件缺失时会自动安装），`plugin`/`theme` 可追加 name 只更新指定项 |
 | `ngwg clean` | 清理构建目录和本地存储的依赖副本 |
 | `ngwg help` / `version` | 帮助与版本 |
 

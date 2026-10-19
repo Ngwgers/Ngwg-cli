@@ -75,11 +75,24 @@ function ngwg_prepare
     ngwg_ensure_root
     ngwg_scrape_ngwg_section
     set -gx NGWG_CORE_REPO_URL (ngwg_core_repo_url)
-    if not set -q NGWG_FILES_PLUGIN
-        set -gx NGWG_FILES_PLUGIN (ngwg_official_url files)
+    # built-in plugin fallbacks: legacy per-plugin env vars win; then export
+    # the generic map consumed by the TS bridge and the declaration reader.
+    # A key declared in ngwg.yaml / theme.yaml still takes precedence later.
+    set -l default_plugins
+    for line in (ngwg_builtin_plugins)
+        set -l parts (string split \t -- $line)
+        set -l name $parts[1]
+        set -l url $parts[2]
+        set -l env_name NGWG_(string upper $name)_PLUGIN
+        if set -q $env_name
+            set url $$env_name
+        else
+            set -gx $env_name $url
+        end
+        set -a default_plugins (printf '%s\t%s' $name $url)
     end
-    if not set -q NGWG_FEATURE_PLUGIN
-        set -gx NGWG_FEATURE_PLUGIN (ngwg_official_url feature)
+    if not set -q NGWG_DEFAULT_PLUGINS
+        set -gx NGWG_DEFAULT_PLUGINS (printf '%s\n' $default_plugins | string collect)
     end
     set -l theme (ngwg_default_theme_dir)
     if test -n "$theme"

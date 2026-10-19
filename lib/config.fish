@@ -21,6 +21,14 @@ function ngwg_official_url
     end
 end
 
+# built-in fallback plugin declarations, one `<name>\t<url>` line each.
+# They are applied after user and theme declarations (a declared key always
+# wins), so either plugin can be replaced by a third-party implementation.
+function ngwg_builtin_plugins
+    printf 'files\t%s\n' (ngwg_official_url files)
+    printf 'feature\t%s\n' (ngwg_official_url feature)
+end
+
 # the CLI's own version (single source of truth — there is no package.json)
 function ngwg_cli_version
     echo 0.2.0

@@ -5,10 +5,14 @@
 //
 // Usage: bun lib/plugin-urls.ts <project-root>
 // Prints one line per plugin:  <scope>\t<name>\t<url>
-//   scope = user | theme-required | theme-optional
+//   scope = user | theme-required | theme-optional | default
+// `default` entries are the CLI's built-in fallback plugins (names not
+// declared by the user or theme); they are emitted last so a declared key
+// can always replace them.
 
 import * as path from "node:path";
 import { existsSync, readFileSync } from "node:fs";
+import { defaultPluginDeclarations } from "./default-plugins.ts";
 
 const root = process.argv[2];
 if (!root) {
@@ -17,12 +21,19 @@ if (!root) {
 }
 
 const configPath = [path.join(root, "ngwg.yaml"), path.join(root, "ngwg.yml")].find((p) => existsSync(p));
+// keys declared by the user or required by the theme; built-in fallbacks are
+// only emitted for keys nobody declared (a declared key wins, which is how a
+// third-party implementation replaces a built-in plugin)
+const declared = new Set<string>();
 if (configPath) {
   const cfg = Bun.YAML.parse(readFileSync(configPath, "utf8"));
   for (const [name, decl] of Object.entries(cfg?.plugins ?? {})) {
     // plugins.<name> is a URL string or a { url, option } declaration
     const url = typeof decl === "string" ? decl : (decl as any)?.url;
-    if (typeof url === "string" && url.trim()) console.log(`user\t${name}\t${url.trim()}`);
+    if (typeof url === "string" && url.trim()) {
+      console.log(`user\t${name}\t${url.trim()}`);
+      declared.add(name);
+    }
   }
   // theme may be a string or a { <name-or-path>: { overrides } } map
   const theme = typeof cfg?.theme === "object" && cfg?.theme !== null ? Object.keys(cfg.theme)[0] : cfg?.theme;
@@ -59,10 +70,20 @@ if (configPath) {
   if (themeRoot) {
     const tc = Bun.YAML.parse(readFileSync(path.join(themeRoot, "theme.yaml"), "utf8"));
     for (const [name, url] of Object.entries(tc?.plugins?.required ?? {})) {
-      if (typeof url === "string" && url.trim()) console.log(`theme-required\t${name}\t${url.trim()}`);
+      if (typeof url === "string" && url.trim()) {
+        console.log(`theme-required\t${name}\t${url.trim()}`);
+        declared.add(name);
+      }
     }
     for (const [name, url] of Object.entries(tc?.plugins?.optional ?? {})) {
       if (typeof url === "string" && url.trim()) console.log(`theme-optional\t${name}\t${url.trim()}`);
     }
   }
+}
+
+// last layer: built-in plugin fallbacks. They are only suggestions for keys
+// nobody declared, so `plugins.files` / `plugins.feature` may point at any
+// third-party implementation instead of the official plugin.
+for (const [name, url] of Object.entries(defaultPluginDeclarations())) {
+  if (!declared.has(name)) console.log(`default\t${name}\t${url}`);
 }

@@ -1,7 +1,7 @@
 // lib/bridge.ts — shared plumbing for the TS-backed subcommands (build/dev/add).
 //
 // The fish lib (lib/core.fish) resolves the core and injects the environment:
-// NGWG_CORE, NGWG_ROOT, NGWG_DEFAULT_THEME, NGWG_FILES_PLUGIN, NGWG_FEATURE_PLUGIN.
+// NGWG_CORE, NGWG_ROOT, NGWG_DEFAULT_THEME, NGWG_DEFAULT_PLUGINS.
 // These plain functions turn that environment into calls on the core's public
 // API. No interfaces, no classes — the core module is consumed structurally at
 // runtime; anything the core exports is whatever its src/index.ts decides.
@@ -9,6 +9,7 @@
 import { existsSync } from "node:fs";
 import * as path from "node:path";
 import { pathToFileURL } from "node:url";
+import { defaultPluginDeclarations } from "./default-plugins.ts";
 
 export function cliRoot(): string {
   return path.resolve(import.meta.dir, "..");
@@ -39,14 +40,9 @@ export function applyLogLevel(core: any, argv: string[]): string[] {
   return rest;
 }
 
-/** Official fallback plugin sources (env overrides win; fish lib sets defaults). */
+/** Built-in fallback plugin sources (env overrides win; fish lib sets them). */
 export function defaultPlugins(): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const key of ["files", "feature"]) {
-    const v = process.env[`NGWG_${key.toUpperCase()}_PLUGIN`];
-    if (v) out[key] = v;
-  }
-  return out;
+  return defaultPluginDeclarations();
 }
 
 /** Existing disk copy for bare theme names (env-injected or project store). */
