@@ -6,6 +6,20 @@ function ngwg_store_valid  # <dir> <rel-path> → 0 when <dir>/<rel-path> exists
     test -e "$argv[1]/$argv[2]"
 end
 
+# install the npm dependencies a fetched copy declares: a theme may use npm
+# packages at render time (EJS templates resolve them from the theme
+# directory), so they must be present before the copy lands. A copy without
+# package.json — or without a "dependencies" section (e.g. Core itself) — is
+# left alone.
+function ngwg_store_install_deps  # <dir>
+    set -l dir $argv[1]
+    if test -f "$dir/package.json"; and grep -q '"dependencies"' "$dir/package.json" 2>/dev/null
+        echo "installing npm dependencies (bun install)…"
+        bun install --cwd "$dir"
+        or return 1
+    end
+end
+
 # clone <url> into <dest> (install). Fails when the clone is missing the
 # <validate> path. Returns non-zero on failure; dest is untouched then.
 function ngwg_store_fetch  # <url> <dest> <validate>
@@ -21,6 +35,10 @@ function ngwg_store_fetch  # <url> <dest> <validate>
         return 1
     end
     if not ngwg_store_valid "$tmp" "$validate"
+        rm -rf "$tmp"
+        return 1
+    end
+    if not ngwg_store_install_deps "$tmp"
         rm -rf "$tmp"
         return 1
     end
@@ -42,6 +60,10 @@ function ngwg_store_update  # <url> <dest> <validate>
         return 1
     end
     if not ngwg_store_valid "$tmp" "$validate"
+        rm -rf "$tmp"
+        return 1
+    end
+    if not ngwg_store_install_deps "$tmp"
         rm -rf "$tmp"
         return 1
     end
