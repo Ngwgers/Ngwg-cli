@@ -31,7 +31,7 @@ end
 
 # the CLI's own version (single source of truth — there is no package.json)
 function ngwg_cli_version
-    echo 0.2.0
+    echo 0.3.0
 end
 
 # expand a `user/repo` shorthand into a full GitHub URL (official org)
