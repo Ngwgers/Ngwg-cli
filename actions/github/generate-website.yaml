@@ -25,6 +25,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
   pages: write
   id-token: write
 
@@ -38,11 +39,10 @@ env:
   NGWG_CLI_REF: main
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      artifact-name: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -62,14 +62,50 @@ jobs:
       - name: Build site
         run: fish "$RUNNER_TEMP/ngwg-cli/bin/ngwg.fish" build
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
+          name: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
           path: public
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      # Artifact metadata can take time to become visible after upload.
+      - name: Wait for Pages artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          ARTIFACT_NAME: ${{ needs.build.outputs.artifact-name }}
+        shell: bash
+        run: |
+          for attempt in {1..12}; do
+            if count=$(gh api --paginate --slurp \
+              "repos/$GH_REPO/actions/runs/$GITHUB_RUN_ID/artifacts?per_page=100" \
+              | jq --arg name "$ARTIFACT_NAME" '[.[].artifacts[] | select(.name == $name and .expired == false)] | length'); then
+              if [ "$count" -eq 1 ]; then
+                exit 0
+              fi
+              echo "Waiting for $ARTIFACT_NAME: found $count artifact(s), attempt $attempt/12"
+            else
+              echo "Artifact query failed, attempt $attempt/12"
+            fi
+            if [ "$attempt" -lt 12 ]; then
+              sleep 5
+            fi
+          done
+          echo "::error::Expected one available artifact named $ARTIFACT_NAME. Check the build upload logs and re-run the deploy job."
+          exit 1
 
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          artifact_name: ${{ needs.build.outputs.artifact-name }}
